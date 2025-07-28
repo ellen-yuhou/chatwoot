@@ -3,8 +3,8 @@ NIXPACKS_NODE_VERSION = "18"
 NIXPACKS_RUBY_VERSION = "3.2.2"
 
 [phases.setup]
-nixPkgs = ['nodejs', 'yarn', 'python3', 'pkg-config', 'libvips']
-
+nixPkgs = ['nodejs', 'npm', 'yarn', 'python3']
+ 
 [phases.install]
 cmds = [
   'bundle config set --local deployment true',
