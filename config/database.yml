@@ -1,28 +1,52 @@
+# config/database.yml
+
+# This 'default' block defines common database settings that can be reused
+# across different environments (development, test, production) using YAML anchors.
 default: &default
   adapter: postgresql
   encoding: unicode
+  # Host for the database connection.
+  # IMPORTANT: For Docker Compose setups (like with Coolify), you MUST set POSTGRES_HOST
+  # as an environment variable in Coolify UI to 'postgres' (the service name of your DB).
+  # If POSTGRES_HOST is not set, it defaults to 'localhost', which causes connection refused errors
+  # when running inside a container trying to reach a separate database container.
   host: <%= ENV.fetch('POSTGRES_HOST', 'localhost') %>
   port: <%= ENV.fetch('POSTGRES_PORT', '5432') %>
-   # ref: https://github.com/mperham/sidekiq/issues/2985#issuecomment-531097962
+  # Connection pool size. Uses SIDEKIQ_CONCURRENCY for Sidekiq, RAILS_MAX_THREADS for Rails web app.
   pool: <%= Sidekiq.server? ? ENV.fetch('SIDEKIQ_CONCURRENCY', 10) : ENV.fetch('RAILS_MAX_THREADS', 5) %>
   variables:
-    # we are setting this value to be close to the racktimeout value. we will iterate and reduce this value going forward
+    # SQL statement timeout. Value is picked from POSTGRES_STATEMENT_TIMEOUT environment variable or defaults to 14s.
     statement_timeout: <%= ENV["POSTGRES_STATEMENT_TIMEOUT"] || "14s" %>
 
+# Development environment settings
 development:
-  <<: *default
+  <<: *default # Inherits all settings from the 'default' block
+  # Database name. Uses POSTGRES_DATABASE env var or defaults to 'chatwoot_dev'.
   database: "<%= ENV.fetch('POSTGRES_DATABASE', 'chatwoot_dev') %>"
+  # Username. Uses POSTGRES_USERNAME env var or defaults to 'postgres'.
   username: "<%= ENV.fetch('POSTGRES_USERNAME', 'postgres') %>"
+  # Password. Uses POSTGRES_PASSWORD env var or defaults to an empty string (common for local dev).
   password: "<%= ENV.fetch('POSTGRES_PASSWORD', '') %>"
 
+# Test environment settings
 test:
-  <<: *default
+  <<: *default # Inherits all settings from the 'default' block
+  # Database name. Uses POSTGRES_DATABASE env var or defaults to 'chatwoot_test'.
   database: "<%= ENV.fetch('POSTGRES_DATABASE', 'chatwoot_test') %>"
+  # Username. Uses POSTGRES_USERNAME env var or defaults to 'postgres'.
   username: "<%= ENV.fetch('POSTGRES_USERNAME', 'postgres') %>"
+  # Password. Uses POSTGRES_PASSWORD env var or defaults to an empty string.
   password: "<%= ENV.fetch('POSTGRES_PASSWORD', '') %>"
 
+# Production environment settings
 production:
-  <<: *default
+  <<: *default # Inherits all settings from the 'default' block
+  # Database name. Uses POSTGRES_DATABASE env var or defaults to 'chatwoot'.
+  # This default 'chatwoot' must match the POSTGRES_DB set in your docker-compose.yaml for the 'postgres' service.
   database: "<%= ENV.fetch('POSTGRES_DATABASE', 'chatwoot') %>"
+  # Username. Uses POSTGRES_USERNAME env var or defaults to 'postgres'.
+  # This 'postgres' default must match POSTGRES_USER in your docker-compose.yaml.
   username: "<%= ENV.fetch('POSTGRES_USERNAME', 'postgres') %>"
-  password: "<%= ENV.fetch('POSTGRES_PASSWORD', 'Active1234') %>"
+  # Password. Uses POSTGRES_PASSWORD env var.
+  # This is CRUCIAL. It MUST be set in Coolify UI with the actual, URL-encoded password.
+  password: <%= ENV['POSTGRES_PASSWORD'] %>
