@@ -21,7 +21,7 @@ services:
       - DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/chatwoot
       - SECRET_KEY_BASE: ${SECRET_KEY_BASE} 
       - FRONTEND_URL: ${FRONTEND_URL}
-      - REDIS_URL: redis://redis:6379/0
+      - REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     # --- ADD THIS BLOCK TO DISABLE HEALTHCHECK --- 
@@ -43,7 +43,7 @@ services:
     image: postgres:12
     restart: always
     ports:
-      - '127.0.0.1:5432:5432'
+      - '5432:5432'
     volumes:
       - /data/postgres:/var/lib/postgresql/data
     environment:
@@ -56,8 +56,9 @@ services:
     image: redis:alpine
     restart: always
     command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
-    env_file: .env
     volumes:
       - /data/redis:/data
     ports:
-      - '127.0.0.1:6379:6379'
+      - '6379:6379'
+    environment: 
+      - REDIS_PASSWORD: ${REDIS_PASSWORD}
