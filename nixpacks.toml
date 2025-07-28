@@ -3,8 +3,13 @@
 NODE_VERSION = "18"
 RUBY_VERSION = "3.2.2"
 
-[phases.build]
-cmds = ["bundle exec rake assets:precompile"]
+[phases.build] 
+cmds = [
+  'export HOME=/app',
+  'export NIXPACKS_PATH=/usr/local/bin:/usr/bin:/bin',
+  'bundle exec rake assets:precompile',
+  'bundle exec bootsnap precompile app/ lib/'
+]
 
 [start]
 cmd = "bundle exec rails server -b 0.0.0.0 -p $PORT"
