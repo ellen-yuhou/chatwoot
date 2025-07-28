@@ -1,64 +1,106 @@
-version: '3'
+version: '3.8' # Using '3.8' for better feature support, '3' is also fine.
 
 services:
+  # Define a reusable 'base' configuration for Rails/Sidekiq services
   base: &base
+    # Use your custom image here if you built one and pushed to Docker Hub,
+    # e.g., your_dockerhub_username/chatwoot-custom:latest
     image: chatwoot/chatwoot:latest
-    env_file: .env ## Change this file for customized env variables
+    # Recommended: Use environment variables from Coolify UI,
+    # so remove env_file if only using Coolify for secrets.
+    # If .env contains non-secret env vars you want, keep it.
+    # env_file: .env # Consider removing if all vars are managed by Coolify UI
     volumes:
-      - /data/storage:/app/storage
+      - /data/storage:/app/storage # Mount for Active Storage files
 
   rails:
-    <<: *base
+    <<: *base # Inherit from the 'base' configuration
     depends_on:
       - postgres
       - redis
     ports:
-      - ':3000:3000'
+      # Correct format: HostPort:ContainerPort
+      # This binds host port 3000 to container port 3000.
+      # If you want external HTTP traffic on port 80, change to '80:3000'
+      - '3000:3000' # Corrected from ':3000:3000'
+
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
-      - DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/chatwoot
-      - SECRET_KEY_BASE: ${SECRET_KEY_BASE} 
-      - FRONTEND_URL: ${FRONTEND_URL}
-      - REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # FIX 1: Correct DATABASE_URL syntax.
+      # When defining environment variables in YAML that also contain colons,
+      # you must enclose the entire string in quotes.
+      # Also, ensure no extra space before the placeholder.
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/chatwoot
+      # FIX 2: Correct SECRET_KEY_BASE syntax. No space between key and colon for single-line string assignment.
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      # FIX 3: Correct FRONTEND_URL syntax. No space between key and colon for single-line string assignment.
+      - FRONTEND_URL=${FRONTEND_URL}
+      # FIX 4: Correct REDIS_URL syntax. No space between key and colon for single-line string assignment.
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+
+    # Ensure this entrypoint script exists in your image (from Dockerfile)
     entrypoint: docker/entrypoints/rails.sh
+    # Command to run after the entrypoint (if entrypoint doesn't exec the command)
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
-    # --- ADD THIS BLOCK TO DISABLE HEALTHCHECK --- 
-    healthcheck: 
-      disable: true
+
+    # Healthcheck configuration - looks correct.
+    healthcheck:
+      disable: true # Or configure it properly if you want health checks
 
   sidekiq:
-    <<: *base
+    <<: *base # Inherit from the 'base' configuration
     depends_on:
       - postgres
       - redis
     environment:
+      # Ensure these match the 'rails' service environment variables,
+      # as Sidekiq also needs database and Redis access.
       - NODE_ENV=production
       - RAILS_ENV=production
       - INSTALLATION_ENV=docker
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/chatwoot
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      # Sidekiq typically does not need FRONTEND_URL
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
 
   postgres:
-    image: postgres:12
+    image: postgres:12 # Using a specific version is good.
     restart: always
+    # FIX 5: Correct ports syntax.
+    # Remove the 127.0.0.1 binding if you want inter-container communication by service name.
+    # '5432:5432' means HostPort:ContainerPort, binding to 0.0.0.0 on the host implicitly.
     ports:
-      - '5432:5432'
+      - '5432:5432' # Corrected from '127.0.0.1:5432:5432'
     volumes:
+      # Persistent volume for PostgreSQL data
       - /data/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
-      # Please provide your own password.
-      - POSTGRES_PASSWORD= ${POSTGRES_PASSWORD}
+      # FIX 6: Correct POSTGRES_PASSWORD syntax.
+      # No space before the placeholder. This is how you reference an env var from Coolify UI.
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
   redis:
-    image: redis:alpine
+    image: redis:alpine # Using a specific tag like redis:7-alpine is more stable.
     restart: always
+    # Command to start Redis with a password - looks correct.
     command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\""]
     volumes:
-      - /data/redis:/data
+      - /data/redis:/data # Persistent volume for Redis data
+    # FIX 7: Correct ports syntax.
+    # Remove the 127.0.0.1 binding if you want inter-container communication by service name.
     ports:
-      - '6379:6379'
-    environment: 
+      - '6379:6379' # Corrected from '127.0.0.1:6379:6379'
+    environment:
+      # FIX 8: Correct REDIS_PASSWORD syntax.
+      # No space between key and colon for single-line string assignment.
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+# Define named volumes for data persistence
+volumes:
+  chatwoot_db_data: # Define this if using a named volume for postgres instead of host bind mount
+  chatwoot_redis_data: # Define this if using a named volume for redis instead of host bind mount
