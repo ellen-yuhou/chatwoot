@@ -1,0 +1,74 @@
+# nixpacks.toml for Chatwoot deployment on Coolify
+# Chatwoot is a Ruby on Rails application with frontend assets
+
+[variables]
+# Rails environment
+RAILS_ENV = "production"
+NODE_ENV = "production"
+
+# Disable Rails bootsnap cache in containerized environments
+DISABLE_BOOTSNAP_LOAD_PATH_CACHE = "true"
+
+# Asset compilation settings
+RAILS_SERVE_STATIC_FILES = "true"
+RAILS_LOG_TO_STDOUT = "true"
+
+[phases.setup]
+# Install system dependencies
+# Chatwoot requires Ruby 3.2+, Node.js 20.x, and various system packages
+nixPkgs = [
+    "ruby_3_2",
+    "nodejs_20", 
+    "yarn",
+    "bundler",
+    "pkg-config",
+    "shared-mime-info",
+    "imagemagick",
+    "ffmpeg",
+    "postgresql",  # for pg gem compilation
+    "libpq",       # PostgreSQL client library
+    "openssl",     # for SSL support
+    "zlib",        # compression library
+    "libxml2",     # XML parsing
+    "libxslt",     # XSLT support
+    "curl",        # HTTP client
+    "git"          # version control
+]
+
+[phases.install]
+# Install Ruby gems and Node.js dependencies
+cmds = [
+    # Install Ruby dependencies
+    "bundle config set --local deployment 'true'",
+    "bundle config set --local without 'development test'",
+    "bundle install --jobs=4 --retry=3",
+    
+    # Install Node.js dependencies
+    "yarn install --frozen-lockfile --production=false"
+]
+
+[phases.build]
+# Compile assets and prepare for production
+cmds = [
+    # Precompile Rails assets (includes webpack compilation)
+    "bundle exec rails assets:precompile",
+    
+    # Clean up development dependencies after asset compilation
+    "yarn install --frozen-lockfile --production=true --ignore-optional",
+    
+    # Create necessary directories
+    "mkdir -p tmp/pids",
+    "mkdir -p log",
+    "mkdir -p storage"
+]
+
+[phases.setup.nixpkgsArchive]
+# Use a specific nixpkgs version for reproducible builds
+nixpkgsArchive = "ba913ede2df10d277d92bf185c8846f892bf8ed7"
+
+[start]
+# Start the Rails server
+cmd = "bundle exec rails server -b 0.0.0.0 -p $PORT"
+
+# Alternative start commands you might need:
+# For Puma server s
