@@ -1,25 +1,10 @@
+# Simple nixpacks.toml for Chatwoot
 [variables]
 NODE_VERSION = "18"
 RUBY_VERSION = "3.2.2"
 
-[phases.setup]
-nixPkgs = ['nodejs_18', 'yarn', 'python3', 'pkg-config', 'vips']
-
-[phases.install]
-cmds = [
-  'bundle config set --local deployment true',
-  'bundle config set --local without development:test',
-  'bundle install',
-  'yarn install --frozen-lockfile'
-]
-
-[phases.build] 
-cmds = [
-  'export HOME=/app',
-  'export NIXPACKS_PATH=/usr/local/bin:/usr/bin:/bin',
-  'bundle exec rake assets:precompile',
-  'bundle exec bootsnap precompile app/ lib/'
-]
+[phases.build]
+cmds = ["bundle exec rake assets:precompile"]
 
 [start]
-cmd = 'bundle exec rails server -b 0.0.0.0'
+cmd = "bundle exec rails server -b 0.0.0.0 -p $PORT"
