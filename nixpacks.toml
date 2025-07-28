@@ -1,0 +1,19 @@
+[variables]
+NIXPACKS_NODE_VERSION = "18"
+NIXPACKS_RUBY_VERSION = "3.2.2"
+
+[phases.setup]
+nixPkgs = ['nodejs', 'yarn', 'python3', 'pkg-config', 'libvips']
+
+[phases.install]
+cmds = [
+  'bundle config set --local deployment true',
+  'bundle config set --local without development:test',
+  'bundle install',
+  'yarn install --frozen-lockfile'
+]
+  
+[phases.build]
+cmds = ['yarn install', 'bundle install', 'bundle exec rake assets:precompile']
+
+ 
