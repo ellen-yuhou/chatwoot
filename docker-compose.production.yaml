@@ -3,9 +3,11 @@ version: '3.8' # Using '3.8' for better feature support, '3' is also fine.
 services:
   # Define a reusable 'base' configuration for Rails/Sidekiq services
   base: &base
+    build: context: . # Root directory (where docker-compose.yaml is) 
+    dockerfile: docker/Dockerfile # Path to your Dockerfile
     # Use your custom image here if you built one and pushed to Docker Hub,
     # e.g., your_dockerhub_username/chatwoot-custom:latest
-    image: chatwoot/chatwoot:latest
+    # image: chatwoot/chatwoot:latest
     # Recommended: Use environment variables from Coolify UI,
     # so remove env_file if only using Coolify for secrets.
     # If .env contains non-secret env vars you want, keep it.
