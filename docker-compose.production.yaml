@@ -3,9 +3,10 @@ version: '3.9'
 services:
   # Define a reusable 'base' configuration for Rails/Sidekiq services
   base: &base
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: chatwoot/chatwoot:latest
+    # build:
+      # context: .
+      # dockerfile: docker/Dockerfile
     volumes:
       # CHANGED: Use a named volume for Active Storage
       - chatwoot_storage:/app/storage 
