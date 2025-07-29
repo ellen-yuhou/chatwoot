@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   # Define a reusable 'base' configuration for Rails/Sidekiq services
