@@ -51,7 +51,7 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init-vector.sql:/docker-entrypoint-initdb.d/00-vector.sql:ro
+      # - ./postgres/init-vector.sql:/docker-entrypoint-initdb.d/00-vector.sql:ro
     env_file: .env # Change this file for customized env variables
     environment:
       POSTGRES_DB: "chatwoot"
